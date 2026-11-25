@@ -376,7 +376,7 @@ aside.notes{display:none}
 </div>
 <div class="reward step" data-xp="20" data-banner="Missão cumprida"><span class="chip">+20 XP</span><p>Isso tem nome: networking. Tu acabou de fazer.</p></div>
 </div>
-<aside class="notes">[9:30 – 11:30] Explica rápido. “Vale qualquer coisa que tu manja: Minecraft, maquiagem, Excel, futebol, Python.” Clique: o cronômetro de 60 s começa sozinho, com música; nos últimos 5 s tem tique-taque e no fim toca a buzina. Pede pra 2 ou 3 pessoas contarem o que a dupla quer aprender. Clique: +20 XP, “isso tem nome bonito no LinkedIn: networking”.</aside>
+<aside class="notes">[9:30 – 11:30] Explica rápido. “Vale qualquer coisa que tu manja: Minecraft, maquiagem, Excel, futebol, Python.” Clique: o cronômetro de 60 s começa sozinho; nos últimos 5 s tem tique-taque e no fim toca a buzina. Pede pra 2 ou 3 pessoas contarem o que a dupla quer aprender. Clique: +20 XP, “isso tem nome bonito no LinkedIn: networking”.</aside>
 </section>
 
 <!-- 9 QUIZ -->
@@ -494,7 +494,7 @@ aside.notes{display:none}
 </div>
 <div class="reward step" data-xp="35" data-banner="Missão cumprida" style="margin-top:14px"><span class="chip">+35 XP</span><p>Mostra teu plano pra tua dupla da missão 2.</p></div>
 </div>
-<aside class="notes">[24:00 – 27:00] Antes de soltar o cronômetro, responde tu mesma as 4 perguntas em voz alta, rapidinho, como exemplo (teu ponto de apoio, o GDG, tua missão diária, tua recarga): isso destrava quem tá com vergonha de começar. Clique: começa o cronômetro de 2 minutos com música. Circula pela sala e ajuda quem travou: “não precisa ser perfeito, é só o primeiro passo”. Quando a buzina tocar: “mostra pra tua dupla da missão 2”. Clique: +35 XP, a barra chega em 100 e toca a fanfarra de “Final secreto desbloqueado”. Puxa aplauso pra sala.</aside>
+<aside class="notes">[24:00 – 27:00] Antes de soltar o cronômetro, responde tu mesma as 4 perguntas em voz alta, rapidinho, como exemplo (teu ponto de apoio, o GDG, tua missão diária, tua recarga): isso destrava quem tá com vergonha de começar. Clique: começa o cronômetro de 2 minutos. Circula pela sala e ajuda quem travou: “não precisa ser perfeito, é só o primeiro passo”. Quando a buzina tocar: “mostra pra tua dupla da missão 2”. Clique: +35 XP, a barra chega em 100 e toca a fanfarra de “Final secreto desbloqueado”. Puxa aplauso pra sala.</aside>
 </section>
 
 <!-- 17 FINAL SECRETO -->
@@ -509,7 +509,7 @@ aside.notes{display:none}
 <p class="mt step" style="font-size:90px;margin-top:6px">E não vai só.</p>
 </div>
 </div>
-<aside class="notes">[27:00 – 28:30] O coração da palestra; a música volta baixinha. “Lembra da professora do colchão? Ela nunca soube o tamanho do que disse. Hoje essa frase é minha pra passar adiante.” Clique, olhando pra sala: “Tu pode mais.” Clique: “E não vai só.” Respira e deixa a frase assentar antes de avançar.</aside>
+<aside class="notes">[27:00 – 28:30] O coração da palestra. “Lembra da professora do colchão? Ela nunca soube o tamanho do que disse. Hoje essa frase é minha pra passar adiante.” Clique, olhando pra sala: “Tu pode mais.” Clique: “E não vai só.” Respira e deixa a frase assentar antes de avançar.</aside>
 </section>
 
 <!-- 18 SAVE -->
@@ -612,7 +612,7 @@ function beat(n,t){const bar=Math.floor(n/16),s=n%16,r=roots[bar%4],intro=bar<2;
  if(s%2===0)nz(t,s%4===2?.05:.025,s%4===2?.1:.05,mus,'highpass',8000);
  if(!intro&&s%2===0)o('sawtooth',mf(s%4===2?r+12:r),t,ST*1.5,.16,mus,{a:.003,lp:900,lpTo:260,lpT:ST*1.5});
 }
-function musicFor(){if(!AC)return;const on=!muted&&(slides[cur].dataset.music==='on'||!!timer);mus.gain.setTargetAtTime(on?.38:0,AC.currentTime,.6)}
+function musicFor(){if(!AC)return;mus.gain.setTargetAtTime(muted?0:.38,AC.currentTime,.4)}
 /* efeitos */
 const stab=(t,notes,dur,pk)=>notes.forEach((m,i)=>{o('sawtooth',mf(m),t,dur,pk,sfx,{a:.006,det:i%2?12:-12,lp:5200,lpTo:900,lpT:dur,send:revS})});
 const S={
