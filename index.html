@@ -1,0 +1,695 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Modo Multiplayer</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Anton&family=Poppins:wght@400;600;700;800;900&family=Yellowtail&display=swap">
+<style>
+/*
+VOICE: palestra-jogo pra adolescentes; divertida, calorosa, de igual pra igual.
+IDEA: um jogo de mundo aberto ao pôr do sol: tela de título, HUD, missões, chefão, save.
+PICTURE: a NPC da Fernanda desenhada, palmeiras e skyline neon sobre um céu laranja-rosa.
+COLOUR and TYPE: roxo noturno, magenta e laranja de pôr do sol, dourado no XP; Anton inclinado com sombra dupla, Poppins no texto, Yellowtail no letreiro.
+LAYOUT: palco 1920×1080 escalado; HUD fixo (XP no alto, radar embaixo), conteúdo em painéis escuros.
+*/
+:root{--ink:#120818;--deep:#1a0838;--plum:#2A1250;--purple:#6D28D9;--violet:#9B6BF2;--pink:#FF4D8D;--orange:#FF8A3D;--gold:#FFC66D;--teal:#2EE6D6;--white:#FFF8F2;--lilac:#DCCBFA;--red:#FF3B4E;--green:#7CFF6B}
+*{box-sizing:border-box}
+html,body{margin:0;height:100%;background:#07020f;overflow:hidden;font-family:Poppins,Arial,sans-serif;color:var(--white)}
+#stage{position:absolute;left:50%;top:50%;width:1920px;height:1080px;transform-origin:center;overflow:hidden;background:var(--deep);cursor:pointer}
+.slide{position:absolute;inset:0;opacity:0;visibility:hidden;transition:opacity .5s,visibility .5s}
+.slide.active{opacity:1;visibility:visible}
+.bg{position:absolute;inset:0;overflow:hidden}
+.content{position:absolute;inset:0;padding:150px 150px 140px}
+aside.notes{display:none}
+
+/* ---------- céus ---------- */
+.bg.sunset{background:linear-gradient(180deg,#160631 0%,#3d1066 24%,#9a2a7e 46%,#ec4a74 60%,#ff7c4d 72%,#ffb35c 80%,#ffd38c 84.5%,#3a1258 84.6%,#1c0a33 100%)}
+.bg.night{background:radial-gradient(ellipse 120% 70% at 50% 108%,#c2357c 0%,#6a1d7d 30%,#2a0d4f 58%,#120626 100%)}
+.bg.dusk{background:linear-gradient(180deg,#ff4d8d 0%,#ff6f6a 55%,#ff9a52 100%)}
+.bg.danger{background:radial-gradient(ellipse 110% 70% at 50% 108%,#ff3b4e 0%,#7d1340 32%,#2a0a2e 62%,#0d0414 100%)}
+.bg.gold{background:linear-gradient(180deg,#2a0d4f 0%,#8a2a7e 30%,#ff5d6e 55%,#ffa34f 72%,#ffd88f 84.5%,#3a1258 84.6%,#1c0a33 100%)}
+.sun{position:absolute;left:50%;width:560px;height:560px;margin-left:-280px;bottom:15.4%;border-radius:50%;background:linear-gradient(180deg,#ffe9a8 0%,#ffb35c 45%,#ff4d8d 100%);
+ -webkit-mask:linear-gradient(#000 0 52%,transparent 52% 56%,#000 56% 64%,transparent 64% 68%,#000 68% 75%,transparent 75% 80%,#000 80% 86%,transparent 86% 92%,#000 92%);
+ mask:linear-gradient(#000 0 52%,transparent 52% 56%,#000 56% 64%,transparent 64% 68%,#000 68% 75%,transparent 75% 80%,#000 80% 86%,transparent 86% 92%,#000 92%);filter:drop-shadow(0 0 60px rgba(255,120,120,.6))}
+.sea{position:absolute;left:0;right:0;bottom:0;height:15.4%;background:repeating-linear-gradient(180deg,rgba(255,120,150,.18) 0 3px,transparent 3px 22px)}
+.palm{position:absolute;bottom:0;color:#12051f;fill:currentColor}
+.sky-l{position:absolute;left:0;right:0;bottom:0;height:330px}
+.stars i{position:absolute;width:3px;height:3px;border-radius:50%;background:#fff;opacity:.7}
+.grid{position:absolute;left:-20%;right:-20%;bottom:-40px;height:300px;background:repeating-linear-gradient(90deg,rgba(255,77,141,.35) 0 2px,transparent 2px 120px),repeating-linear-gradient(180deg,rgba(255,77,141,.35) 0 2px,transparent 2px 46px);transform:perspective(500px) rotateX(62deg);transform-origin:bottom}
+
+/* ---------- tipografia ---------- */
+.mtag{display:inline-block;background:var(--pink);color:var(--ink);font:800 30px/1 Poppins,sans-serif;letter-spacing:.06em;padding:10px 26px 9px;transform:skew(-12deg);text-transform:uppercase;box-shadow:6px 6px 0 var(--ink)}
+.mtag.mtt{background:var(--teal)}.mtag.mtg{background:var(--gold)}
+.mt{font:400 112px/1 Anton,Impact,sans-serif;text-transform:uppercase;margin:18px 0 0;transform:skew(-6deg);letter-spacing:.01em;color:var(--white);text-shadow:5px 5px 0 var(--pink),11px 11px 0 var(--ink)}
+.lead{font:700 46px/1.25 Poppins,sans-serif;margin:30px 0 0;text-shadow:3px 3px 0 var(--ink)}
+.script{font-family:Yellowtail,cursive;color:var(--gold);text-shadow:0 0 22px rgba(255,77,141,.95),3px 3px 0 var(--ink)}
+.pane{background:rgba(12,4,24,.84);border:2px solid rgba(255,255,255,.08);border-left:10px solid var(--pink);border-radius:8px;padding:34px 42px;box-shadow:10px 10px 0 rgba(0,0,0,.35)}
+.pink{color:var(--pink)}.gold{color:var(--gold)}.teal{color:var(--teal)}
+.chip{display:inline-block;font:400 52px/1 Anton,sans-serif;color:var(--ink);background:var(--gold);padding:12px 26px 10px;transform:skew(-10deg);box-shadow:6px 6px 0 var(--ink)}
+
+/* ---------- passos ---------- */
+.step{opacity:0;transform:translateY(26px);transition:opacity .45s,transform .5s cubic-bezier(.2,1.3,.4,1)}
+.step.on{opacity:1;transform:none}
+
+/* ---------- HUD ---------- */
+#hud{position:absolute;inset:0;pointer-events:none;z-index:20;transition:opacity .5s}
+#hud.off{opacity:0}#hud.nr .radar,#hud.nr .prog{display:none}
+.brand{position:absolute;left:150px;top:52px;font:700 26px Poppins,sans-serif;color:var(--white);text-shadow:2px 2px 0 var(--ink)}
+.brand span{color:var(--pink)}
+.xpbox{position:absolute;right:70px;top:40px;width:420px;text-align:right}
+.xplabel{font:800 22px Poppins,sans-serif;letter-spacing:.14em;color:var(--lilac);text-shadow:2px 2px 0 var(--ink)}
+.xpnum{font:400 84px/1 Anton,sans-serif;color:var(--gold);-webkit-text-stroke:3px var(--ink);paint-order:stroke fill;text-shadow:5px 5px 0 var(--ink);margin-top:2px}
+.xpnum small{font-size:44px;color:var(--white)}
+.xpbar{height:22px;margin-top:10px;background:rgba(12,4,24,.85);border:3px solid var(--ink);position:relative;overflow:hidden}
+.xpbar i{position:absolute;left:0;top:0;bottom:0;width:0;background:linear-gradient(90deg,var(--pink),var(--orange),var(--gold));transition:width .9s cubic-bezier(.3,1,.4,1)}
+.radar{position:absolute;left:50px;bottom:44px;width:140px;height:140px;border-radius:50%;background:radial-gradient(circle,rgba(46,230,214,.18) 0 30%,rgba(12,4,24,.88) 31%);border:5px solid var(--ink);box-shadow:0 0 0 3px rgba(46,230,214,.6);overflow:hidden}
+.radar::before,.radar::after{content:"";position:absolute;background:rgba(46,230,214,.35)}
+.radar::before{left:50%;top:0;bottom:0;width:2px}.radar::after{top:50%;left:0;right:0;height:2px}
+.sweep{position:absolute;inset:0;border-radius:50%;background:conic-gradient(from 0deg,rgba(46,230,214,.55),transparent 22%);animation:spin 3.2s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+.blip{position:absolute;width:14px;height:14px;border-radius:50%;background:var(--pink);box-shadow:0 0 14px var(--pink);left:50%;top:50%;margin:-8px;transition:transform .8s}
+.player{position:absolute;left:50%;top:50%;width:0;height:0;margin:-12px 0 0 -9px;border-left:9px solid transparent;border-right:9px solid transparent;border-bottom:24px solid var(--white)}
+.prog{position:absolute;left:50px;bottom:22px;width:140px;height:12px;background:rgba(12,4,24,.85);border:2px solid var(--ink)}
+.prog i{display:block;height:100%;width:0;background:var(--teal);transition:width .5s}
+.area{position:absolute;right:80px;bottom:120px;font:72px/1 Yellowtail,cursive;color:var(--white);text-shadow:0 0 20px var(--pink),4px 4px 0 var(--ink);opacity:0;transform:translateX(40px);transition:opacity .6s,transform .6s}
+.area.show{opacity:1;transform:none}
+.area small{display:block;font:800 22px Poppins,sans-serif;letter-spacing:.16em;color:var(--gold);text-align:right;margin-bottom:6px;text-shadow:2px 2px 0 var(--ink)}
+
+/* ---------- efeitos ---------- */
+#fx{position:absolute;inset:0;pointer-events:none;z-index:40;overflow:hidden}
+.xppop{position:absolute;left:0;right:0;top:390px;text-align:center;font:400 220px/1 Anton,sans-serif;color:var(--gold);-webkit-text-stroke:8px var(--ink);paint-order:stroke fill;text-shadow:10px 10px 0 var(--pink)}
+.banner{position:absolute;left:0;right:0;top:250px;text-align:center}
+.banner b{display:inline-block;font:400 96px/1 Anton,sans-serif;letter-spacing:.04em;color:var(--white);background:var(--ink);padding:18px 60px 14px;transform:skew(-8deg);box-shadow:0 0 0 6px var(--gold),12px 12px 0 6px var(--pink)}
+.coin{position:absolute;left:0;top:0;width:34px;height:34px;border-radius:50%;background:radial-gradient(circle at 35% 35%,#fff3c4,var(--gold) 45%,#e08a1e);border:3px solid var(--ink)}
+.flash{position:absolute;inset:0;background:#fff}
+.redflash{position:absolute;inset:0;background:radial-gradient(circle,transparent 40%,rgba(255,59,78,.6))}
+.dmg{position:absolute;font:400 110px/1 Anton,sans-serif;color:var(--red);-webkit-text-stroke:6px var(--ink);paint-order:stroke fill}
+.confetti{position:absolute;top:-30px;width:16px;height:30px}
+.lvl{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;background:radial-gradient(circle,rgba(18,8,24,.55),rgba(18,8,24,.9))}
+.lvl h3{margin:0;font:400 230px/1 Anton,sans-serif;color:var(--gold);-webkit-text-stroke:8px var(--ink);paint-order:stroke fill;text-shadow:12px 12px 0 var(--pink);transform:skew(-6deg)}
+.lvl p{margin:30px 0 0;font:800 54px Poppins,sans-serif;letter-spacing:.06em;background:var(--teal);color:var(--ink);padding:10px 34px;transform:skew(-10deg)}
+
+/* ---------- capa ---------- */
+.cover-t{position:absolute;left:150px;top:230px;margin:0;font:400 200px/.9 Anton,Impact,sans-serif;text-transform:uppercase;transform:skew(-6deg);color:var(--white);text-shadow:8px 8px 0 var(--pink),17px 17px 0 var(--ink)}
+.cover-s{position:absolute;left:170px;top:660px;font-size:70px;line-height:1.1;margin:0;white-space:nowrap;color:var(--white);text-shadow:0 0 22px rgba(255,77,141,.95),0 0 8px rgba(255,77,141,.8),3px 3px 0 var(--ink)}
+.cover-k{position:absolute;left:150px;top:150px}
+.press{position:absolute;left:170px;top:880px;font:400 54px Anton,sans-serif;letter-spacing:.12em;color:var(--white);text-shadow:4px 4px 0 var(--ink);animation:blink 1.4s steps(2,start) infinite}
+@keyframes blink{50%{opacity:.25}}
+.ready{position:absolute;left:160px;top:860px;font:400 48px/1 Anton,sans-serif;letter-spacing:.1em;color:var(--ink);background:var(--teal);border-radius:60px;padding:18px 44px 16px;box-shadow:6px 6px 0 var(--ink)}
+.ready.on~.press{display:none}
+.npc-big{position:absolute;bottom:0;filter:drop-shadow(18px 0 0 rgba(18,8,24,.45))}
+
+/* ---------- cards de itens ---------- */
+.row{display:grid;gap:32px;margin-top:40px}
+.row.c3{grid-template-columns:repeat(3,minmax(0,1fr))}.row.c4{grid-template-columns:repeat(4,minmax(0,1fr))}
+.item{background:rgba(12,4,24,.86);border:3px solid var(--ink);border-top:12px solid var(--pink);border-radius:8px;padding:28px 32px;box-shadow:10px 10px 0 rgba(0,0,0,.4);position:relative}
+.item.t{border-top-color:var(--teal)}.item.g{border-top-color:var(--gold)}.item.v{border-top-color:var(--violet)}
+.item .n{font:400 88px/1 Anton,sans-serif;color:var(--gold);-webkit-text-stroke:3px var(--ink);paint-order:stroke fill}
+.item h4{margin:10px 0 0;font:800 38px/1.15 Poppins,sans-serif}
+.item p{margin:10px 0 0;font:400 28px/1.38 Poppins,sans-serif;color:var(--lilac)}
+.item .tag{font:800 24px Poppins,sans-serif;letter-spacing:.12em;text-transform:uppercase;color:var(--teal)}
+.ico{width:64px;height:64px}
+
+/* ---------- check-in ---------- */
+.hands{margin-top:30px;padding:24px 44px}
+.ln{font:600 40px/1.3 Poppins,sans-serif;margin:12px 0;padding-left:56px;position:relative}
+.ln::before{content:"▸";position:absolute;left:0;color:var(--pink)}
+.reward{position:absolute;right:250px;bottom:50px;display:flex;align-items:center;gap:32px;margin:0}
+.reward p{margin:0;font:800 34px/1.3 Poppins,sans-serif;background:var(--gold);color:var(--ink);padding:12px 28px;transform:skew(-10deg);box-shadow:6px 6px 0 var(--ink)}
+
+/* ---------- personagem ---------- */
+.spot{position:absolute;left:120px;bottom:0;width:700px;height:930px;background:radial-gradient(ellipse 50% 40% at 50% 92%,rgba(46,230,214,.45),transparent 70%)}
+.plate{position:absolute;left:270px;bottom:60px;background:var(--ink);padding:14px 34px;transform:skew(-10deg);box-shadow:0 0 0 5px var(--pink)}
+.plate b{display:block;font:400 64px/1 Anton,sans-serif;letter-spacing:.04em}.plate span{font:700 26px Poppins,sans-serif;color:var(--gold)}
+.sheet{position:absolute;right:110px;top:240px;width:1060px;padding:24px 40px}
+.srow{display:flex;gap:24px;padding:11px 0;border-bottom:2px solid rgba(255,255,255,.1)}
+.srow b{width:200px;flex:none;font:800 26px/1.6 Poppins,sans-serif;letter-spacing:.12em;color:var(--pink)}
+.srow span{font:600 30px/1.35 Poppins,sans-serif}
+.stat{display:flex;align-items:center;gap:24px;margin-top:16px}
+.stat b{width:380px;flex:none;font:700 26px Poppins,sans-serif;color:var(--lilac)}
+.segs{display:flex;gap:6px;flex:1}.segs i{flex:1;height:26px;background:rgba(255,255,255,.12);transform:skew(-14deg)}.segs i.f{background:var(--teal)}.segs.p i.f{background:var(--pink)}
+
+/* ---------- diálogo ---------- */
+.say{font:900 104px/1.05 Poppins,sans-serif;margin:40px 0 0;text-shadow:5px 5px 0 var(--ink);max-width:1500px}
+.dlg{position:absolute;left:300px;right:150px;bottom:150px;display:flex;gap:34px;align-items:center;background:#120818;border:4px solid var(--white);border-radius:14px;padding:26px 40px 26px 26px;box-shadow:12px 12px 0 var(--ink)}
+.dlg .pic{position:relative;width:170px;height:170px;flex:none;border-radius:12px;overflow:hidden;background:var(--plum);border:4px solid var(--pink)}
+.dlg .pic.t{border-color:var(--teal);display:flex;align-items:center;justify-content:center;font:400 110px Anton,sans-serif;color:var(--teal)}
+.dlg .who{font:800 26px Poppins,sans-serif;letter-spacing:.16em;color:var(--pink)}
+.dlg .pic.t+div .who{color:var(--teal)}
+.dlg p{margin:8px 0 0;font:600 40px/1.35 Poppins,sans-serif}
+.dlg .more{position:absolute;right:26px;bottom:14px;font-size:28px;color:var(--gold);animation:blink 1s steps(2,start) infinite}
+
+/* ---------- rota ---------- */
+.route{position:relative;height:420px;margin-top:40px}
+.route svg{position:absolute;left:0;top:0}
+.wp{position:absolute;top:0;width:460px}
+.wp .pin{width:96px;height:96px;border-radius:50% 50% 50% 0;transform:rotate(-45deg);background:var(--pink);border:5px solid var(--ink);margin:0 auto 22px;display:flex;align-items:center;justify-content:center}
+.wp .pin b{transform:rotate(45deg);font:400 48px Anton,sans-serif;color:var(--ink)}
+.wp .pane{text-align:center;border-left:none;border-top:8px solid var(--pink);padding:24px 28px}
+.wp h5{margin:0;font:800 26px Poppins,sans-serif;letter-spacing:.14em;color:var(--gold)}
+.wp p{margin:10px 0 0;font:600 34px/1.35 Poppins,sans-serif}
+
+/* ---------- timer ---------- */
+.timer{position:relative;width:340px;height:340px;flex:none}
+.timer svg{position:absolute;inset:0}
+.timer .ring{transition:stroke-dashoffset .25s linear}
+.tdisp{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font:400 140px/1 Anton,sans-serif;color:var(--white);text-shadow:6px 6px 0 var(--ink)}
+.tdisp.end{color:var(--red);font-size:110px}
+.m2{display:flex;gap:70px;align-items:center;margin-top:30px}
+.inst{flex:1;display:flex;flex-direction:column;gap:22px}
+.inst div{display:flex;align-items:center;gap:30px;background:rgba(12,4,24,.86);border-left:10px solid var(--teal);padding:20px 34px;font:700 44px Poppins,sans-serif;box-shadow:8px 8px 0 rgba(0,0,0,.4)}
+.inst b{font:400 64px/1 Anton,sans-serif;color:var(--gold);width:50px}
+.go{font:800 30px Poppins,sans-serif;letter-spacing:.1em;color:var(--teal);margin-top:6px}
+
+/* ---------- quiz ---------- */
+.q{position:relative;padding-bottom:40px}
+.q h4{font-size:36px}
+.stamp{display:inline-block;margin-top:18px;font:400 56px/1 Anton,sans-serif;letter-spacing:.08em;padding:8px 22px 4px;border:7px solid;border-radius:10px;transform:rotate(-12deg);background:rgba(12,4,24,.9)}
+.stamp.m{color:var(--red);border-color:var(--red)}.stamp.v{color:var(--green);border-color:var(--green)}
+.stamp.step{transform:rotate(-12deg) scale(2.4);opacity:0;transition:transform .28s cubic-bezier(.3,1.6,.5,1),opacity .2s}
+.stamp.step.on{transform:rotate(-12deg) scale(1);opacity:1}
+.why.step{margin-top:18px}
+
+/* ---------- energia / quests ---------- */
+.meter{display:flex;gap:6px;margin-top:20px}.meter i{flex:1;height:22px;background:var(--green);transform:skew(-14deg)}.meter i.lo{background:rgba(255,255,255,.15)}
+.qgrid{display:grid;grid-template-columns:1fr 1fr;gap:10px 50px}.quest{display:flex;gap:26px;align-items:flex-start;padding:20px 0}
+.box{width:56px;height:56px;flex:none;border:5px solid var(--teal);border-radius:8px;display:flex;align-items:center;justify-content:center;font:900 40px Poppins;color:var(--teal)}
+.quest h4{margin:0;font:800 38px/1.2 Poppins,sans-serif}
+.quest p{margin:6px 0 0;font:400 30px/1.4 Poppins,sans-serif;color:var(--lilac)}
+.saveline{display:flex;align-items:center;gap:26px;margin-top:34px}
+.saveico{width:72px;height:72px;border-radius:50%;border:8px solid var(--gold);border-top-color:transparent;animation:spin 1.1s linear infinite}
+.saveline p{margin:0;font-size:84px}
+
+/* ---------- statement ---------- */
+.stmt{font:900 108px/1.04 Poppins,sans-serif;color:var(--ink);margin:30px 0 0;letter-spacing:-.01em}
+.stmt-s{font:800 44px Poppins,sans-serif;color:var(--ink);margin-top:44px;background:var(--white);display:inline-block;padding:10px 30px;transform:skew(-8deg)}
+
+/* ---------- chefão ---------- */
+.boss-t{font:400 300px/.9 Anton,sans-serif;margin:10px 0 0;transform:skew(-6deg);color:var(--white);text-shadow:8px 8px 0 var(--red),17px 17px 0 var(--ink)}
+.wanted{position:absolute;left:1060px;top:270px;text-align:left}
+.wanted .st{font-size:84px;letter-spacing:6px;color:var(--gold);-webkit-text-stroke:3px var(--ink);paint-order:stroke fill;animation:pulse 1s ease-in-out infinite alternate}
+@keyframes pulse{to{opacity:.55}}
+.wanted b{display:block;font:800 26px Poppins,sans-serif;letter-spacing:.16em;color:var(--lilac)}
+.hp{display:flex;gap:6px;width:720px;height:44px;margin-top:14px;padding:5px;background:var(--ink)}
+.hp i{flex:1;background:var(--red);transition:opacity .4s,transform .4s}.hp i.gone{opacity:.12;transform:scaleY(.5)}
+.atk{display:grid;grid-template-columns:1fr 1fr;gap:26px;margin-top:50px}
+.atk div{background:rgba(12,4,24,.88);border-left:10px solid var(--red);padding:24px 34px;box-shadow:8px 8px 0 rgba(0,0,0,.4)}
+.atk b{font:800 24px Poppins,sans-serif;letter-spacing:.14em;color:var(--red)}
+.atk p{margin:6px 0 0;font:700 italic 44px/1.25 Poppins,sans-serif}
+.pu h4{font-size:34px;text-transform:uppercase}.pu .tag{color:var(--red)}
+.pu p{font-size:26px}.pu p.why{color:var(--teal);font-weight:600;margin-top:14px;padding-top:14px;border-top:2px solid rgba(255,255,255,.12)}
+
+/* ---------- slots ---------- */
+.slot{background:rgba(12,4,24,.86);border:4px dashed var(--teal);border-radius:12px;padding:26px 28px}
+.slot h4{margin:10px 0 0;font:800 34px/1.18 Poppins,sans-serif}
+.slot p{margin:8px 0 0;font:400 26px/1.4 Poppins,sans-serif;color:var(--lilac)}.slot p.ex{font-style:italic;color:var(--teal)}
+.slot .line{height:4px;background:rgba(255,255,255,.25);margin-top:18px}
+.slot .tag{font:800 24px Poppins,sans-serif;letter-spacing:.12em;text-transform:uppercase;color:var(--teal)}
+.headrow{display:flex;justify-content:space-between;align-items:flex-start}
+.timer.sm{width:210px;height:210px;margin:0 auto}.timer.sm .tdisp{font-size:84px}.timer.sm .tdisp.end{font-size:66px}
+
+/* ---------- final ---------- */
+.secret{position:absolute;left:150px;top:150px;width:1000px}
+.big-script{font-size:170px;line-height:1;margin:16px 0 0}
+.selfie{display:inline-block;margin-top:34px;font:800 40px Poppins,sans-serif;background:var(--white);color:var(--ink);padding:14px 40px;transform:skew(-8deg);box-shadow:8px 8px 0 var(--pink)}
+.saves{margin-top:40px;display:flex;flex-direction:column;gap:22px;width:1450px}
+.sv{display:flex;align-items:center;gap:34px;background:rgba(12,4,24,.88);border:3px solid rgba(255,255,255,.12);border-radius:10px;padding:24px 36px}
+.sv .sl{font:400 40px Anton,sans-serif;letter-spacing:.06em;color:var(--gold);width:180px;flex:none}
+.sv h4{margin:0;font:800 42px/1.2 Poppins,sans-serif}.sv p{margin:6px 0 0;font:400 28px/1.4 Poppins,sans-serif;color:var(--lilac)}
+.saved{position:absolute;right:150px;top:250px;font:400 64px Anton,sans-serif;letter-spacing:.08em;color:var(--green);text-shadow:4px 4px 0 var(--ink)}
+.ach{display:inline-flex;align-items:center;gap:26px;background:var(--ink);border:4px solid var(--gold);border-radius:60px;padding:16px 40px 16px 18px;box-shadow:0 0 30px rgba(255,198,109,.5)}
+.ach i{width:64px;height:64px;border-radius:50%;background:var(--gold);display:flex;align-items:center;justify-content:center;font-style:normal;font:900 38px Poppins;color:var(--ink)}
+.ach b{font:800 30px Poppins,sans-serif;letter-spacing:.12em}
+.qr{width:250px;height:250px;flex:none;padding:0;overflow:hidden;background:var(--white);border:6px solid var(--ink);border-radius:20px;display:flex;align-items:center;justify-content:center;text-align:center;font:800 26px Poppins,sans-serif;color:var(--purple);box-shadow:10px 10px 0 var(--pink)}
+
+/* ---------- controles fora do palco ---------- */
+#notes{position:fixed;left:0;right:0;bottom:0;max-height:38vh;overflow:auto;background:rgba(10,4,20,.95);color:#fff;font:16px/1.55 Poppins,sans-serif;padding:16px 22px 18px;border-top:3px solid var(--pink);display:none;z-index:50}
+#notes.show{display:block}
+#notes b{color:var(--gold)}
+#nav{position:fixed;right:14px;bottom:14px;display:flex;gap:8px;z-index:60}
+#nav button{width:44px;height:44px;border-radius:10px;border:2px solid rgba(255,255,255,.25);background:rgba(10,4,20,.7);color:#fff;font:700 20px Poppins,sans-serif;cursor:pointer}
+#nav button:focus-visible{outline:3px solid var(--teal)}
+.pgnum{position:absolute;right:56px;bottom:34px;z-index:30;pointer-events:none;font:400 46px/1 Anton,sans-serif;letter-spacing:.04em;color:var(--white);-webkit-text-stroke:2px var(--ink);paint-order:stroke fill;text-shadow:4px 4px 0 var(--ink)}.pgnum span{color:var(--gold)}
+#hint{position:fixed;left:50%;top:14px;transform:translateX(-50%);background:rgba(10,4,20,.85);color:#fff;font:600 14px Poppins,sans-serif;padding:8px 16px;border-radius:20px;z-index:60;transition:opacity 1s}
+</style>
+</head>
+<body>
+
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+<symbol id="palm" viewBox="0 0 300 700"><path d="M146 700 C150 540 168 380 186 220 L200 222 C186 380 172 540 172 700 Z"/><path d="M192 214 C150 160 80 150 10 196 C80 176 140 186 188 226 Z"/><path d="M192 214 C160 140 110 100 40 96 C110 126 150 170 186 222 Z"/><path d="M194 212 C220 140 260 110 300 112 C260 140 230 180 200 224 Z"/><path d="M196 214 C250 180 290 190 300 250 C270 216 240 214 200 228 Z"/><path d="M190 216 C130 226 90 270 80 330 C110 280 150 250 192 230 Z"/><path d="M196 216 C230 250 250 300 244 360 C230 310 214 270 192 232 Z"/></symbol>
+<symbol id="i-bar" viewBox="0 0 84 84"><rect x="6" y="30" width="72" height="24" rx="4" fill="none" stroke="#FFC66D" stroke-width="6"/><rect x="12" y="36" width="40" height="12" fill="#FF4D8D"/></symbol>
+<symbol id="i-team" viewBox="0 0 84 84"><circle cx="26" cy="28" r="12" fill="#2EE6D6"/><circle cx="58" cy="28" r="12" fill="#2EE6D6"/><path d="M6 72 C8 52 44 52 46 72Z M38 72 C40 52 76 52 78 72Z" fill="#2EE6D6"/></symbol>
+<symbol id="i-lock" viewBox="0 0 84 84"><rect x="16" y="38" width="52" height="38" rx="6" fill="#FFC66D"/><path d="M26 38 V26 a16 16 0 0 1 32 0 V38" fill="none" stroke="#FFC66D" stroke-width="8"/><text x="42" y="68" text-anchor="middle" font-family="Anton,sans-serif" font-size="26" fill="#120818">?</text></symbol>
+<symbol id="i-heart" viewBox="0 0 84 84"><path d="M42 74 C10 52 6 36 12 24 C20 10 38 12 42 26 C46 12 64 10 72 24 C78 36 74 52 42 74Z" fill="#FF4D8D"/></symbol>
+<symbol id="i-globe" viewBox="0 0 84 84"><circle cx="42" cy="42" r="32" fill="none" stroke="#FFC66D" stroke-width="6"/><path d="M10 42 H74 M42 10 C28 26 28 58 42 74 C56 58 56 26 42 10" fill="none" stroke="#FFC66D" stroke-width="5"/></symbol>
+<symbol id="i-book" viewBox="0 0 84 84"><path d="M8 18 C24 14 36 16 42 24 C48 16 60 14 76 18 V70 C60 66 48 68 42 74 C36 68 24 66 8 70Z" fill="none" stroke="#2EE6D6" stroke-width="6" stroke-linejoin="round"/><path d="M42 24 V72" stroke="#2EE6D6" stroke-width="5"/></symbol>
+<symbol id="i-case" viewBox="0 0 84 84"><rect x="8" y="26" width="68" height="46" rx="6" fill="none" stroke="#FFC66D" stroke-width="6"/><path d="M30 26 V16 H54 V26 M8 44 H76" fill="none" stroke="#FFC66D" stroke-width="6"/></symbol>
+<symbol id="i-bolt" viewBox="0 0 84 84"><path d="M48 6 L16 48 H38 L32 78 L68 32 H46 Z" fill="#FF4D8D" stroke="#120818" stroke-width="3" stroke-linejoin="round"/></symbol>
+<symbol id="i-clock" viewBox="0 0 84 84"><circle cx="42" cy="42" r="32" fill="none" stroke="#FFC66D" stroke-width="6"/><path d="M42 22 V42 L56 52" fill="none" stroke="#FFC66D" stroke-width="6" stroke-linecap="round"/></symbol>
+</svg>
+
+<div id="stage" role="region" aria-label="Apresentação Modo Multiplayer">
+
+<!-- 1 CAPA -->
+<section class="slide" data-bg="sunset" data-hud="off" data-music="on">
+<div class="content">
+<span class="mtag cover-k">masbahguriatech apresenta</span>
+<h1 class="cover-t">Modo<br>Multiplayer</h1>
+<p class="script cover-s">ninguém zera tech no modo solo</p>
+<div class="ready step" data-start>▶ Player 1 pronto · bora jogar</div>
+<div class="press">▶ Press start</div>
+<img class="npc-big" src="npc.webp" alt="NPC ilustrada da Fernanda segurando um microfone" style="right:30px;height:960px">
+</div>
+<aside class="notes">[0:00 – 0:45] Antes de começar: clica uma vez na tela (ou aperta → no passador) pra ligar o som. Isso faz aparecer “Player 1 pronto” e a música começa. Entra com energia: “Bah, boa tarde! Quem aqui joga alguma coisa? Celular, console, PC, vale tudo.” Deixa levantarem a mão. “Ótimo, porque hoje isso aqui não é uma palestra. É uma partida cooperativa: ou a sala inteira ganha, ou ninguém ganha.” Atalhos: M liga e desliga a música, N mostra estas notas, F tela cheia.</aside>
+</section>
+
+<!-- 2 REGRAS -->
+<section class="slide" data-bg="night" data-area="Start|Tutorial">
+<div class="content">
+<span class="mtag mtt">Tutorial</span>
+<h2 class="mt">Regras do jogo</h2>
+<p class="lead">Hoje a sala inteira é <span class="gold">um time só.</span></p>
+<div class="row c3">
+<div class="item"><svg class="ico"><use href="#i-bar"/></svg><h4>Missão cumprida enche a barra</h4><p>Cada missão que a turma faz junta vira XP lá em cima.</p></div>
+<div class="item t"><svg class="ico"><use href="#i-team"/></svg><h4>Ninguém joga no modo solo</h4><p>Quando eu chamar, todo mundo entra. Até o fundão.</p></div>
+<div class="item g"><svg class="ico"><use href="#i-lock"/></svg><h4>100 XP destrava um final secreto</h4><p>Só aparece se a turma chegar lá. Sem spoiler.</p></div>
+</div>
+</div>
+<aside class="notes">[0:45 – 1:30] Aponta pro XP lá em cima: “essa barra é de vocês”. Três regras, sem ler os cards: cada missão enche a barra; ninguém joga no modo solo (olha pro fundão com cara de quem sabe); com 100 de XP tem um final secreto, e tu não vai contar o que é.</aside>
+</section>
+
+<!-- 3 CHECK-IN -->
+<section class="slide" data-bg="night" data-area="Start|Tutorial">
+<div class="content">
+<span class="mtag">Missão 1</span>
+<h2 class="mt">Check-in</h2>
+<div class="pane hands">
+<p class="ln" style="font-weight:800;font-size:50px;padding:0;margin-bottom:22px">Levanta a mão quem…</p>
+<p class="ln step">…já estudou horas pra uma prova e sentiu que não aprendeu nada.</p>
+<p class="ln step">…já travou num exercício e quis fechar tudo e ir dormir.</p>
+<p class="ln step">…já ficou sem vontade de abrir o caderno (ou o computador).</p>
+<p class="ln step">…já pensou: <span class="pink">“isso não é pra mim”.</span></p>
+</div>
+<div class="reward step" data-xp="15" data-banner="Missão cumprida"><span class="chip">+15 XP</span><p>Boas-vindas ao clube. Ninguém aqui tá sozinho nisso.</p></div>
+</div>
+<aside class="notes">[1:30 – 3:30] Um clique por pergunta. Levanta a tua mão junto em todas. Depois da terceira: “desânimo não é sinal de que tu tá no lugar errado, é sinal de que tu tá tentando”. Na última, 3 segundos de silêncio: “eu também já pensei isso, várias vezes”. Último clique: toca o som de XP, aparece “Missão cumprida” e a barra sobe. Puxa palmas.</aside>
+</section>
+
+<!-- 4 PERSONAGEM -->
+<section class="slide" data-bg="night" data-area="Fase 1|A origem">
+<div class="spot"></div>
+<img class="npc-big" src="npc.webp" alt="NPC da Fernanda" style="left:90px;height:880px">
+<div class="plate"><b>FERNANDA</b><span>@masbahguriatech</span></div>
+<div class="content">
+<span class="mtag mtt" style="position:absolute;left:150px;top:150px">Seleção de personagem</span>
+<div class="sheet pane">
+<div class="srow"><b>CLASSE</b><span>Product Owner</span></div>
+<div class="srow"><b>GUILDA</b><span>GDG Porto Alegre, coordenadora</span></div>
+<div class="srow"><b>ORIGEM</b><span>Vendedora de colchão no shopping, aos 19</span></div>
+<div class="srow"><b>ESPECIAL</b><span>Subir no palco com frio na barriga mesmo</span></div>
+<div class="srow"><b>FRAQUEZA</b><span>Querer abraçar o mundo com as pernas</span></div>
+<div class="stat"><b>Coragem</b><div class="segs"><i class="f"></i><i class="f"></i><i class="f"></i><i class="f"></i><i class="f"></i><i class="f"></i><i class="f"></i><i class="f"></i><i></i><i></i></div></div>
+<div class="stat"><b>Timidez (ainda aparece)</b><div class="segs"><i class="f"></i><i class="f"></i><i class="f"></i><i class="f"></i><i class="f"></i><i class="f"></i><i></i><i></i><i></i><i></i></div></div>
+<div class="stat"><b>Puxar gente junto</b><div class="segs p"><i class="f"></i><i class="f"></i><i class="f"></i><i class="f"></i><i class="f"></i><i class="f"></i><i class="f"></i><i class="f"></i><i class="f"></i><i class="f"></i></div></div>
+</div>
+</div>
+<aside class="notes">[3:30 – 4:30] Apresenta a ficha como tela de seleção de personagem, rindo de ti mesma. Escolhe duas linhas: “Fraqueza: querer abraçar o mundo com as pernas. Quem aqui também começa dez coisas e termina uma?” e “Timidez: ainda aparece, tá? Ela não zerou, só não manda mais em mim.” As barras são brincadeira. Se as gurias que tu já conhece estiverem na sala, acena pra elas aqui (combina antes).</aside>
+</section>
+
+<!-- 5 TUTORIAL -->
+<section class="slide" data-bg="sunset" data-area="Fase 1|A origem">
+<div class="content">
+<span class="mtag">Fase 1</span>
+<p class="say">Aos 19, eu vendia<br><span class="gold">colchão no shopping.</span></p>
+<div class="dlg"><div class="pic"><img src="npc.webp" alt="" style="position:absolute;width:465px;left:-163px;top:-98px;max-width:none"></div><div><div class="who">FERNANDA</div><p>Começava tudo e não terminava nada. Não era preguiça: era falta de direção e barulho demais de fora.</p></div><span class="more">▼</span></div>
+<div class="dlg step"><div class="pic t">?</div><div><div class="who">UMA PROFESSORA</div><p>“Tu pode mais do que isso.”</p></div><span class="more">▼</span></div>
+</div>
+<aside class="notes">[4:30 – 6:00] Começa pela cena, devagar: “aos 19, eu tava atrás de um balcão vendendo colchão no shopping”. A caixa de diálogo é tua: fase de começar tudo e não terminar nada. Clique: aparece a professora, como NPC de jogo que entrega a missão. “Aí uma professora me disse que eu podia mais.” Silêncio de 2 segundos. A frase volta no final secreto, então não explica ainda. (Se as palavras dela foram outras, me avisa que eu ajusto.)</aside>
+</section>
+
+<!-- 6 VIRADA -->
+<section class="slide" data-bg="night" data-area="Fase 1|A origem">
+<div class="content">
+<span class="mtag">Fase 1</span>
+<h2 class="mt">1 frase. 1 pessoa.</h2>
+<p class="lead" style="max-width:1500px;font-size:40px">Ela não resolveu minha vida: me mostrou uma porta. O caminho eu andei, mas não andei sozinha.</p>
+<div class="route">
+<svg width="1620" height="140" viewBox="0 0 1620 140"><path d="M230 60 C500 -10 640 130 810 60 C980 -10 1120 130 1390 60" fill="none" stroke="#2EE6D6" stroke-width="10" stroke-dasharray="4 22" stroke-linecap="round"/></svg>
+<div class="wp step" style="left:0"><div class="pin"><b>1</b></div><div class="pane"><h5>ANTES</h5><p>Tímida, travava pra levantar a mão</p></div></div>
+<div class="wp step" style="left:580px"><div class="pin" style="background:var(--teal)"><b>2</b></div><div class="pane" style="border-top-color:var(--teal)"><h5>NO MEIO</h5><p>Um meetup na faculdade, com tecnologia ainda cheia de novidade</p></div></div>
+<div class="wp step" style="left:1160px"><div class="pin" style="background:var(--gold)"><b>3</b></div><div class="pane" style="border-top-color:var(--gold)"><h5>HOJE</h5><p>Coordeno o GDG Porto Alegre e subo no palco</p></div></div>
+</div>
+</div>
+<aside class="notes">[6:00 – 7:30] “Uma frase. Uma pessoa. Ela não resolveu a minha vida, me mostrou uma porta.” Três pontos no mapa, um por clique. Antes: a timidez. No meio: o meetup na faculdade, quando tecnologia ainda era quase tudo novidade; “eu não entrei sabendo, entrei curiosa”. Hoje: GDG e palco. Fecha: “e eu ainda sinto frio na barriga, tô sentindo agora; só não espero ele passar pra subir”.</aside>
+</section>
+
+<!-- 7 TIME -->
+<section class="slide" data-bg="night" data-area="Fase 2|Monta teu time">
+<div class="content">
+<span class="mtag mtt">Fase 2</span>
+<h2 class="mt">Monta teu time</h2>
+<p class="lead">Rede não é uma coisa só. <span class="gold">São três.</span></p>
+<div class="row c3">
+<div class="item step"><svg class="ico"><use href="#i-heart"/></svg><div class="tag" style="margin-top:12px">Rede de apoio</div><h4>Quem te levanta</h4><p>Família, amizade, professora. Quem responde teu áudio de 3 minutos.</p></div>
+<div class="item t step"><svg class="ico"><use href="#i-team"/></svg><div class="tag" style="margin-top:12px">Comunidade</div><h4>Quem aprende junto</h4><p>Meetup, grupo de estudo, o Discord da galera, o GDG.</p></div>
+<div class="item g step"><svg class="ico"><use href="#i-globe"/></svg><div class="tag" style="margin-top:12px">Networking</div><h4>Quem abre caminho</h4><p>Gente que conhece gente: estágio, evento, área que tu nem sabia que existia.</p></div>
+</div>
+</div>
+<aside class="notes">[7:30 – 9:30] Um card por clique. Rede de apoio: quem te levanta quando tu cai, não precisa ser da área. Comunidade: gente se ajudando de graça porque alguém ajudou elas antes; foi num meetup desses que tu entrou. Networking: não é colecionar contato no LinkedIn, é lembrar das pessoas e deixar elas lembrarem de ti. Pergunta: “qual dessas três tu já tem?”</aside>
+</section>
+
+<!-- 8 MISSÃO 2 -->
+<section class="slide" data-bg="night" data-area="Fase 2|Monta teu time">
+<div class="content">
+<span class="mtag">Missão 2</span>
+<h2 class="mt">Vira pro lado</h2>
+<div class="m2">
+<div class="timer"><svg viewBox="0 0 420 420"><circle cx="210" cy="210" r="186" fill="rgba(12,4,24,.88)" stroke="#120818" stroke-width="16"/><circle class="ring" cx="210" cy="210" r="186" fill="none" stroke="#FF4D8D" stroke-width="16" stroke-dasharray="1169" stroke-dashoffset="0" transform="rotate(-90 210 210)"/></svg><div class="tdisp" data-init="60">60</div></div>
+<div class="inst">
+<div><b>1</b>Teu nome</div>
+<div><b>2</b>Uma coisa que tu manja</div>
+<div><b>3</b>Uma coisa que tu quer aprender</div>
+<p class="go step" data-timer="60">⏱ VALENDO! O CRONÔMETRO TÁ RODANDO</p>
+</div>
+</div>
+<div class="reward step" data-xp="20" data-banner="Missão cumprida"><span class="chip">+20 XP</span><p>Isso tem nome: networking. Tu acabou de fazer.</p></div>
+</div>
+<aside class="notes">[9:30 – 11:30] Explica rápido. “Vale qualquer coisa que tu manja: Minecraft, maquiagem, Excel, futebol, Python.” Clique: o cronômetro de 60 s começa sozinho, com música; nos últimos 5 s tem tique-taque e no fim toca a buzina. Pede pra 2 ou 3 pessoas contarem o que a dupla quer aprender. Clique: +20 XP, “isso tem nome bonito no LinkedIn: networking”.</aside>
+</section>
+
+<!-- 9 QUIZ -->
+<section class="slide" data-bg="night" data-area="Fase 2|Monta teu time">
+<div class="content">
+<span class="mtag">Missão 3</span>
+<h2 class="mt">Mito ou verdade?</h2>
+<p class="lead" style="font-size:40px">Braço pra cima = <span class="teal">verdade</span> · Braços em X = <span class="pink">mito</span></p>
+<div class="row c3" style="margin-top:64px">
+<div class="item q"><h4>Pra entrar numa comunidade, tu precisa já saber muito.</h4><div class="stamp m step" data-sfx="stamp">MITO</div><p class="why step">É onde se aprende. Eu entrei num meetup quando tecnologia ainda era quase tudo novidade.</p></div>
+<div class="item t q"><h4>Networking é coisa de gente extrovertida.</h4><div class="stamp m step" data-sfx="stamp">MITO</div><p class="why step">É conversar com uma pessoa de cada vez. Quem fala aqui era a mais tímida da sala.</p></div>
+<div class="item g q"><h4>Mulheres estão na computação desde o começo.</h4><div class="stamp v step" data-sfx="stamp">VERDADE</div><p class="why step">Ada Lovelace escreveu um algoritmo pra uma máquina em 1843. Seis mulheres programaram o ENIAC em 1946.</p></div>
+</div>
+<div class="reward step" data-xp="15" data-banner="Missão cumprida" style="position:absolute;right:150px;top:330px;margin:0"><span class="chip">+15 XP</span></div>
+</div>
+<aside class="notes">[11:30 – 14:00] Lê a afirmação, “3, 2, 1, votem!”, e clica: o carimbo cai com som. Mais um clique mostra a explicação. Na 1, teu meetup da faculdade. Na 2, tu era a mais tímida. Na 3: “a computação começou com mulheres; a história é que esqueceu de contar. Gurias, esse lugar é de vocês desde sempre.” Último clique: +15 XP.</aside>
+</section>
+
+<!-- 10 ENERGIA -->
+<section class="slide" data-bg="night" data-area="Fase 3|Cuida do personagem">
+<div class="content">
+<span class="mtag mtg">Fase 3</span>
+<h2 class="mt">Energia no vermelho</h2>
+<p class="lead">…não ganha jogo. <span class="gold">Cuida do teu personagem.</span></p>
+<div class="row c3" style="margin-top:44px">
+<div class="item t step"><svg class="ico"><use href="#i-book"/></svg><div class="tag" style="margin-top:10px">Estudo</div><h4>Bloco curto, com hora pra acabar</h4><p>Um assunto por vez, 25 a 50 min e pausa. Revisar todo dia rende mais que virar a noite.</p></div>
+<div class="item g step"><svg class="ico"><use href="#i-case"/></svg><div class="tag" style="margin-top:10px">Trabalho</div><h4>Procurando ou já trabalhando</h4><p>Procurando? Hora fixa na semana pra vagas e currículo. Já trabalha? Protege teu horário de estudo.</p></div>
+<div class="item step"><svg class="ico"><use href="#i-heart"/></svg><div class="tag" style="margin-top:10px">Tempo pra ti</div><h4>Recarga não é luxo</h4><p>Ler algo que não cai na prova. Mexer o corpo. É o que te mantém no jogo.</p></div>
+</div>
+</div>
+<aside class="notes">[14:00 – 16:30] “Todo jogo tem barra de energia. Se tu só ataca e nunca recarrega, cai.” Um card por clique. Estudo: “quem já estudou com o celular do lado e viu que passou uma hora no TikTok?”. Trabalho: fala pra quem procura o primeiro estágio e pra quem já trabalha e estuda. Tempo pra ti: ler, mexer o corpo, ficar à toa sem culpa. Fecha: “coloca primeiro na agenda o que te recarrega; o resto se encaixa em volta”.</aside>
+</section>
+
+<!-- 11 MOTIVAÇÃO -->
+<section class="slide" data-bg="night" data-area="Fase 3|Cuida do personagem">
+<div class="content">
+<span class="mtag mtg">Fase 3</span>
+<h2 class="mt">Missões diárias</h2>
+<p class="lead">Motivação não cai do céu. <span class="gold">Tu fabrica.</span></p>
+<div class="pane qgrid" style="margin-top:34px;padding:14px 42px;border-left-color:var(--teal)">
+<div class="quest step"><div class="box">✓</div><div><h4>Começa pequeno</h4><p>15 minutos já contam. A vontade quase sempre vem depois que tu começa.</p></div></div>
+<div class="quest step"><div class="box">✓</div><div><h4>Meta que dá pra riscar</h4><p>“Estudar pra prova” é vago. “Resolver 5 questões” dá pra marcar como feito.</p></div></div>
+<div class="quest step"><div class="box">✓</div><div><h4>Registra teu progresso</h4><p>Anota o que tu fez. No dia ruim, a lista lembra que tu andou.</p></div></div>
+<div class="quest step"><div class="box">✓</div><div><h4>Lembra do teu porquê</h4><p>E quando nem isso funcionar, chama teu time.</p></div></div>
+</div>
+</div>
+<aside class="notes">[16:30 – 19:00] “Muita gente espera a motivação chegar pra começar. Spoiler: ela costuma chegar depois.” Cada clique marca uma missão diária. No 1: “15 minutos; se depois quiser parar, para. Quase nunca tu para.” No 2: meta vaga não dá pra comemorar. No 3: teu diário de conquistas (“não é autoestima, é evidência”). No 4: o porquê pode mudar, e quando nada funciona, o time segura. Termina: “dia ruim não apaga teu save, só pausa o jogo”.</aside>
+</section>
+
+<!-- 12 PERTENCER -->
+<section class="slide" data-bg="dusk" data-area="Fase 4|O chefão">
+<div class="content">
+<span class="mtag" style="background:var(--ink);color:var(--white)">Pra quem acha que não pertence</span>
+<p class="stmt">Tu não precisa parecer<br>com ninguém da sala<br>pra ter lugar nela.</p>
+<p class="stmt-s step">Gurias: isso é especialmente pra vocês.</p>
+</div>
+<aside class="notes">[19:00 – 20:00] Muda o tom, fala mais baixo. “Isso vale pra todo mundo que já se sentiu diferente: a única guria do grupo, quem nunca teve computador em casa, quem chegou depois.” Lê a frase sem pressa. Clique: “E gurias, isso é especialmente pra vocês.” Olha pras gurias que tu já conhece. Pausa de 3 segundos.</aside>
+</section>
+
+<!-- 13 PAPO RETO -->
+<section class="slide" data-bg="night" data-area="Fase 4|O chefão">
+<div class="content">
+<span class="mtag">Papo reto</span>
+<h2 class="mt" style="font-size:104px">Nem todo medo é<br>falta de confiança</h2>
+<div style="display:flex;gap:50px;margin-top:44px">
+<div class="pane" style="flex:1.1"><p style="margin:0;font:600 36px/1.4 Poppins">Às vezes o que trava não é falta de confiança: é não ver ninguém parecido contigo no caminho. Isso não é defeito teu. E é exatamente pra isso que rede existe: pra ninguém atravessar só.</p><p style="margin:24px 0 0;font:800 34px/1.4 Poppins;color:var(--teal)">Se pra ti é fácil pertencer: chama quem tá na beira, escuta, divide o palco.</p></div>
+<div class="pane" style="flex:.9;border-left-color:var(--gold);display:flex;flex-direction:column;justify-content:center"><p class="script" style="margin:0;font-size:80px;line-height:1.05">“Se estou sozinha,<br>vou sozinha igual.”</p><p class="step" style="margin:26px 0 0;font:800 44px Poppins;color:var(--pink)">Mas olha pro lado: tu não tá só.</p></div>
+</div>
+</div>
+<aside class="notes">[20:00 – 21:00] O momento mais sério. “Quando tu sente que não pertence, nem sempre o problema é tu. Às vezes é só não enxergar ninguém parecido contigo no caminho, e isso se resolve com gente do teu lado.” Fala com quem se sente em casa: ser aliado é chamar o colega quieto, não interromper, dividir o crédito. Lê tua frase e, no clique: “Mas olha pro lado. Tu não tá só.”</aside>
+</section>
+
+<!-- 14 CHEFÃO -->
+<section class="slide" data-bg="danger" data-area="Fase 4|O chefão">
+<div class="content">
+<span class="mtag" style="background:var(--red)">Chefão final</span>
+<h2 class="boss-t">O MEDO</h2>
+<div class="wanted"><div class="st">★★★★★</div><b>NÍVEL DE MEDO: MÁXIMO</b><div class="hp"><i></i><i></i><i></i><i></i></div><b style="margin-top:8px">HP 100/100</b></div>
+<div class="atk">
+<div class="step" data-sfx="attack"><b>ATAQUE 1</b><p>“Isso não é pra mim.”</p></div>
+<div class="step" data-sfx="attack"><b>ATAQUE 2</b><p>“Vão rir da minha pergunta.”</p></div>
+<div class="step" data-sfx="attack"><b>ATAQUE 3</b><p>“Todo mundo aqui sabe mais que eu.”</p></div>
+<div class="step" data-sfx="attack"><b>ATAQUE 4</b><p>“Já é tarde (ou cedo) demais pra mim.”</p></div>
+</div>
+</div>
+<aside class="notes">[21:00 – 22:00] Voz de narrador: “E agora… o chefão final.” Cada clique, um ataque com som de ameaça. Depois de cada um: “quem já levou esse golpe?”. Fecha: “Esse chefão não morre de vez. Volta em toda fase nova: primeiro estágio, primeiro emprego, primeira palestra. Mas ele tem fraqueza.”</aside>
+</section>
+
+<!-- 15 POWER-UPS -->
+<section class="slide" data-bg="danger" data-area="Fase 4|O chefão">
+<div class="content">
+<div class="headrow"><div><span class="mtag mtt">Power-ups</span><h2 class="mt">Como vencer o medo</h2><p class="lead" style="font-size:36px;margin-top:22px">Ele não some de vez. Mas cada atitude tira um pedaço da força dele.</p></div>
+<div style="text-align:right;margin-top:150px;flex:none"><b style="font:800 26px Poppins;letter-spacing:.16em;color:var(--lilac)">HP DO MEDO</b><div class="hp" style="width:520px"><i></i><i></i><i></i><i></i></div></div></div>
+<div class="row c4" style="margin-top:38px">
+<div class="item pu step" data-hit><div class="tag">1 · −25 HP</div><h4>Perguntar</h4><p>Em voz alta, no grupo, no evento.</p><p class="why">Dúvida guardada cresce. Quando tu pergunta, descobre que não era só tu.</p></div>
+<div class="item t pu step" data-hit><div class="tag">2 · −25 HP</div><h4>Levar alguém junto</h4><p>Uma amiga, um colega, alguém da turma.</p><p class="why">Lugar novo com companhia deixa de ser desconhecido e vira programa.</p></div>
+<div class="item g pu step" data-hit><div class="tag">3 · −25 HP</div><h4>Aparecer</h4><p>Vai mesmo com frio na barriga.</p><p class="why">O medo diminui fazendo, não esperando. Na segunda vez, ele já é menor.</p></div>
+<div class="item v pu step" data-hit><div class="tag">4 · −25 HP</div><h4>Ajudar quem vem atrás</h4><p>Explica o que tu já sabe pra alguém.</p><p class="why">Ensinando, tu percebe o quanto já aprendeu. O “eu não sei nada” perde força.</p></div>
+</div>
+<div class="reward step" data-xp="15" data-banner="Chefão derrotado"><span class="chip">+15 XP</span><p>Levanta 1, 2, 3 ou 4 dedos: qual tu usa primeiro?</p></div>
+</div>
+<aside class="notes">[22:00 – 24:00] Abre: “O medo não some de vez, mas dá pra deixar ele fraco.” Cada clique é um golpe: som de impacto, tela treme e o HP cai 25. Pra cada power-up, explica o porquê em uma frase (tá no card) e, se der, conta um exemplo teu: a pergunta que tu tinha vergonha de fazer, o primeiro meetup que tu foi acompanhada, a primeira palestra com frio na barriga. Último clique: “Chefão derrotado”, +15 XP. Aí: “cada um levanta 1, 2, 3 ou 4 dedos: qual tu usa primeiro?” e lê a sala. Fecha: “ele volta a cada fase nova; a diferença é que tu volta com time”.</aside>
+</section>
+
+<!-- 16 MISSÃO 4 -->
+<section class="slide" data-bg="night" data-area="Final|Missão final">
+<div class="content">
+<div class="headrow"><div><span class="mtag">Missão 4</span><h2 class="mt">Monta teu plano</h2><p class="lead" style="font-size:38px">Responde as 4 perguntas. Celular ou papel, 2 minutos.</p></div>
+<div style="margin-top:60px;text-align:center"><div class="timer sm"><svg viewBox="0 0 420 420"><circle cx="210" cy="210" r="186" fill="rgba(12,4,24,.88)" stroke="#120818" stroke-width="20"/><circle class="ring" cx="210" cy="210" r="186" fill="none" stroke="#2EE6D6" stroke-width="20" stroke-dasharray="1169" stroke-dashoffset="0" transform="rotate(-90 210 210)"/></svg><div class="tdisp" data-init="2:00">2:00</div></div><p class="go step" data-timer="120" style="margin:8px 0 0">⏱ VALENDO!</p></div></div>
+<div class="row c4" style="margin-top:34px">
+<div class="slot"><svg class="ico"><use href="#i-heart"/></svg><div class="tag">Ponto de apoio</div><h4>Quem eu chamo quando dá ruim?</h4><p class="ex">ex.: alguém da família, uma amiga, um professor</p><div class="line"></div></div>
+<div class="slot"><svg class="ico"><use href="#i-team"/></svg><div class="tag">Comunidade</div><h4>Que lugar eu vou conhecer?</h4><p class="ex">ex.: um meetup, o GDG, um grupo de estudo</p><div class="line"></div></div>
+<div class="slot"><svg class="ico"><use href="#i-clock"/></svg><div class="tag">Missão diária</div><h4>15 minutos de quê, todo dia?</h4><p class="ex">ex.: 3 exercícios, 1 vídeo de aula, 1 página</p><div class="line"></div></div>
+<div class="slot"><svg class="ico"><use href="#i-bolt"/></svg><div class="tag">Recarga</div><h4>O que é só meu, que me recarrega?</h4><p class="ex">ex.: ler, treinar, caminhar, desenhar</p><div class="line"></div></div>
+</div>
+<div class="reward step" data-xp="35" data-banner="Missão cumprida" style="margin-top:14px"><span class="chip">+35 XP</span><p>Mostra teu plano pra tua dupla da missão 2.</p></div>
+</div>
+<aside class="notes">[24:00 – 27:00] Antes de soltar o cronômetro, responde tu mesma as 4 perguntas em voz alta, rapidinho, como exemplo (teu ponto de apoio, o GDG, tua missão diária, tua recarga): isso destrava quem tá com vergonha de começar. Clique: começa o cronômetro de 2 minutos com música. Circula pela sala e ajuda quem travou: “não precisa ser perfeito, é só o primeiro passo”. Quando a buzina tocar: “mostra pra tua dupla da missão 2”. Clique: +35 XP, a barra chega em 100 e toca a fanfarra de “Final secreto desbloqueado”. Puxa aplauso pra sala.</aside>
+</section>
+
+<!-- 17 FINAL SECRETO -->
+<section class="slide" data-bg="gold" data-hud="dim" data-radar="off" data-music="on" data-area="Final|Final secreto">
+<img class="npc-big" src="npc.webp" alt="NPC da Fernanda" style="right:60px;height:900px">
+<div class="content">
+<div class="secret">
+<span class="mtag mtg">★ Final secreto desbloqueado</span>
+<p class="lead" style="font-size:52px;margin-top:34px">Lembra da professora?</p>
+<p class="lead" style="font-size:34px;font-weight:600;max-width:1000px;margin-top:16px">Ela nunca soube o tamanho do que disse. Hoje essa frase é minha pra passar adiante:</p>
+<p class="script big-script step">Tu pode mais.</p>
+<p class="mt step" style="font-size:90px;margin-top:6px">E não vai só.</p>
+</div>
+</div>
+<aside class="notes">[27:00 – 28:30] O coração da palestra; a música volta baixinha. “Lembra da professora do colchão? Ela nunca soube o tamanho do que disse. Hoje essa frase é minha pra passar adiante.” Clique, olhando pra sala: “Tu pode mais.” Clique: “E não vai só.” Respira e deixa a frase assentar antes de avançar.</aside>
+</section>
+
+<!-- 18 SAVE -->
+<section class="slide" data-bg="night" data-area="Final|Salvar jogo">
+<div class="content">
+<span class="mtag mtt">Salvar jogo · pra segunda-feira</span>
+<h2 class="mt">Teu inventário</h2>
+<div class="saves">
+<div class="sv"><span class="sl">SLOT 1</span><div><h4>Entra em 1 comunidade até o fim do mês</h4><p>Um GDG, o Women Techmakers ou o grupo de tech mais perto de ti.</p></div></div>
+<div class="sv"><span class="sl">SLOT 2</span><div><h4>Vai no primeiro evento com alguém</h4><p>Time pequeno também zera fase.</p></div></div>
+<div class="sv"><span class="sl">SLOT 3</span><div><h4>Faz 1 pergunta em público</h4><p>Na aula, no grupo, no evento. Uma só já conta.</p></div></div>
+</div>
+<div class="saved step" data-sfx="save">✓ JOGO SALVO</div>
+</div>
+<aside class="notes">[28:30 – 29:30] “Três itens pro inventário. Ninguém precisa mudar a vida até segunda, só dar um passo.” Lê os títulos. Clique: “Jogo salvo”, com som. Pode pedir pra tirarem foto do slide.</aside>
+</section>
+
+<!-- 19 FIM -->
+<section class="slide" data-bg="sunset" data-hud="dim" data-radar="off" data-music="on" data-area="Final|Créditos">
+<img class="npc-big" src="npc.webp" alt="NPC da Fernanda" style="right:60px;height:900px">
+<div class="content">
+<div class="ach"><i>★</i><b>CONQUISTA DESBLOQUEADA</b></div>
+<h2 class="cover-t" style="position:static;font-size:150px;margin-top:34px">Modo Multiplayer<br>ativado</h2>
+<p class="script" style="font-size:72px;margin:30px 0 0 20px">ninguém zera tech no modo solo</p>
+<div style="display:flex;align-items:center;gap:44px;margin:34px 0 0 10px"><div class="qr"><img src="qr.png" alt="QR code para linktr.ee/masbahguriatech" style="width:100%;height:100%;display:block"></div><p style="font:800 36px/1.5 Poppins;margin:0;text-shadow:3px 3px 0 var(--ink)">@masbahguriatech<br>linkedin.com/in/<br>fernanda-dossantos</p></div>
+</div>
+<aside class="notes">[29:30 – 30:00] “Obrigada, time. Me chama na DM: se tu entrar numa comunidade depois de hoje, eu quero saber.” Deixa o QR na tela enquanto o pessoal sai ou pergunta.</aside>
+</section>
+
+<div id="hud">
+<div class="brand">masbahguriatech <span>| no palco</span></div>
+<div class="xpbox"><div class="xplabel">XP DA TURMA</div><div class="xpnum"><span id="xpn">0</span><small>/100</small></div><div class="xpbar"><i id="xpf"></i></div></div>
+<div class="radar"><div class="sweep"></div><div class="blip" id="blip"></div><div class="player"></div></div>
+<div class="prog"><i id="prog"></i></div>
+<div class="area" id="area"></div>
+</div>
+<div class="pgnum" id="pg"><span>1</span> / 19</div>
+<div id="fx"></div>
+</div>
+
+<div id="notes"></div>
+<div id="hint">Clica ou → pra começar · ← volta · M música · N notas · F tela cheia</div>
+<div id="nav"><button id="bp" aria-label="Voltar">‹</button><button id="bn" aria-label="Avançar">›</button></div>
+
+<script>
+{
+const stage=document.getElementById('stage'),fx=document.getElementById('fx');
+const slides=[...document.querySelectorAll('.slide')];
+const hud=document.getElementById('hud'),xpn=document.getElementById('xpn'),xpf=document.getElementById('xpf');
+const pgEl=document.getElementById('pg'),areaEl=document.getElementById('area'),notesEl=document.getElementById('notes'),progEl=document.getElementById('prog'),blip=document.getElementById('blip');
+let cur=0,shownXP=0,lastArea='',timer=null,muted=false;
+
+/* ---------- cenários ---------- */
+const palm=(side,h,x,flip)=>`<svg class="palm" style="${side}:${x}px;height:${h}px;width:${h*300/700}px;${flip?'transform:scaleX(-1)':''}" viewBox="0 0 300 700" aria-hidden="true"><use href="#palm"/></svg>`;
+function skyline(color){let s='',x=0,i=0;while(x<1920){const w=60+((i*37)%90),h=90+((i*53)%210);s+=`<rect x="${x}" y="${330-h}" width="${w}" height="${h}" fill="${color}"/>`;for(let wy=330-h+18;wy<310;wy+=34)for(let wx=x+12;wx<x+w-14;wx+=24)if((wx*7+wy*3+i)%5===0)s+=`<rect x="${wx}" y="${wy}" width="10" height="14" fill="${(wx+wy)%3?'#FFC66D':'#2EE6D6'}" opacity=".85"/>`;x+=w+6;i++}return `<svg class="sky-l" viewBox="0 0 1920 330" preserveAspectRatio="none" aria-hidden="true">${s}</svg>`}
+function stars(n){let s='<div class="stars">';for(let i=0;i<n;i++)s+=`<i style="left:${(i*197)%1900}px;top:${(i*89)%520}px;opacity:${.3+(i%5)/8}"></i>`;return s+'</div>'}
+slides.forEach(sl=>{
+ const t=sl.dataset.bg,bg=document.createElement('div');bg.className='bg '+t;
+ if(t==='sunset'||t==='gold')bg.innerHTML=stars(26)+'<div class="sun"></div><div class="sea"></div>'+palm('left',720,40)+palm('left',520,260,1)+palm('right',640,40,1);
+ else if(t==='night')bg.innerHTML=stars(60)+'<div class="grid"></div>'+skyline('#0e0420')+palm('left',560,-40)+palm('right',480,-30,1);
+ else if(t==='danger')bg.innerHTML=stars(30)+'<div class="grid" style="filter:hue-rotate(-30deg)"></div>'+skyline('#0b0310');
+ else if(t==='dusk')bg.innerHTML=palm('right',640,20,1)+palm('right',440,240);
+ sl.prepend(bg);
+});
+
+/* ---------- escala ---------- */
+function fit(){const s=Math.min(innerWidth/1920,innerHeight/1080);stage.style.transform=`translate(-50%,-50%) scale(${s})`}
+addEventListener('resize',fit);fit();
+
+/* ---------- áudio: beat trap/R&B escuro original, 140 bpm meio-tempo ---------- */
+let AC=null,master,mus,sfx,rev,revM,revS,dly,nextT=0,stepN=0,shaper;
+const mf=m=>440*Math.pow(2,(m-69)/12);
+function initAudio(){if(AC)return;try{AC=new (window.AudioContext||window.webkitAudioContext)();
+ const comp=AC.createDynamicsCompressor();comp.threshold.value=-14;comp.ratio.value=4;comp.attack.value=.004;comp.release.value=.2;comp.connect(AC.destination);
+ master=AC.createGain();master.gain.value=.95;master.connect(comp);
+ mus=AC.createGain();mus.gain.value=0;mus.connect(master);sfx=AC.createGain();sfx.gain.value=.8;sfx.connect(master);
+ rev=AC.createConvolver();const len=AC.sampleRate*2.4,ir=AC.createBuffer(2,len,AC.sampleRate);for(let c=0;c<2;c++){const d=ir.getChannelData(c);for(let i=0;i<len;i++)d[i]=(Math.random()*2-1)*Math.pow(1-i/len,2.6)}rev.buffer=ir;
+ revM=AC.createGain();revM.gain.value=1;revM.connect(rev);const rg=AC.createGain();rg.gain.value=.5;rev.connect(rg);rg.connect(master);
+ revS=AC.createGain();revS.gain.value=.6;revS.connect(rev);
+ dly=AC.createDelay(1);dly.delayTime.value=60/140*.5;const fb=AC.createGain();fb.gain.value=.32;const dl=AC.createBiquadFilter();dl.type='lowpass';dl.frequency.value=2600;dly.connect(dl);dl.connect(fb);fb.connect(dly);const dOut=AC.createGain();dOut.gain.value=.5;dl.connect(dOut);dOut.connect(mus);
+ shaper=AC.createWaveShaper();const cv=new Float32Array(1024);for(let i=0;i<1024;i++){const x=i/512-1;cv[i]=Math.tanh(x*2.6)}shaper.curve=cv;
+ nextT=AC.currentTime+.1;setInterval(sched,25)}catch(e){AC=null}}
+function o(type,f,t,dur,peak,dest,op){op=op||{};const os=AC.createOscillator();os.type=type;os.frequency.setValueAtTime(f,t);if(op.to)os.frequency.exponentialRampToValueAtTime(op.to,t+(op.glide||dur*.6));if(op.det)os.detune.value=op.det;
+ const g=AC.createGain(),a=op.a||.004;g.gain.setValueAtTime(.0001,t);g.gain.exponentialRampToValueAtTime(peak,t+a);if(op.hold)g.gain.setValueAtTime(peak,t+a+op.hold);g.gain.exponentialRampToValueAtTime(.0001,t+a+(op.hold||0)+dur);
+ let n=os;if(op.lp){const f2=AC.createBiquadFilter();f2.type='lowpass';f2.Q.value=op.q||.8;f2.frequency.setValueAtTime(op.lp,t);if(op.lpTo)f2.frequency.exponentialRampToValueAtTime(op.lpTo,t+(op.lpT||dur));os.connect(f2);n=f2}
+ if(op.drive){n.connect(shaper);n=shaper}
+ n.connect(g);g.connect(dest);if(op.send)g.connect(op.send);os.start(t);os.stop(t+a+(op.hold||0)+dur+.05)}
+let nb=null;
+function nz(t,dur,peak,dest,type,f,op){op=op||{};if(!nb){nb=AC.createBuffer(1,AC.sampleRate,AC.sampleRate);const d=nb.getChannelData(0);for(let i=0;i<d.length;i++)d[i]=Math.random()*2-1}
+ const s=AC.createBufferSource();s.buffer=nb;const fl=AC.createBiquadFilter();fl.type=type;fl.frequency.setValueAtTime(f,t);if(op.to)fl.frequency.exponentialRampToValueAtTime(op.to,t+dur);fl.Q.value=op.q||.9;
+ const g=AC.createGain(),a=op.a||.002;g.gain.setValueAtTime(.0001,t);g.gain.exponentialRampToValueAtTime(peak,t+a);g.gain.exponentialRampToValueAtTime(.0001,t+a+dur);
+ s.connect(fl);fl.connect(g);g.connect(dest);if(op.send)g.connect(op.send);s.start(t,Math.random()*.5);s.stop(t+a+dur+.05)}
+/* música: groove anos 80 (synthwave), só ritmo, 110 bpm, tudo no tempo */
+const ST=60/110/4;
+const roots=[45,41,48,43]; // A · F · C · G
+function sched(){if(!AC)return;while(nextT<AC.currentTime+.2){beat(stepN,nextT);nextT+=ST;stepN++}}
+function beat(n,t){const bar=Math.floor(n/16),s=n%16,r=roots[bar%4],intro=bar<2;
+ if(s%4===0)o('sine',150,t,.22,.9,mus,{to:45,glide:.08,a:.002});
+ if(!intro&&(s===4||s===12)){nz(t,.13,.42,mus,'bandpass',1900,{q:.8});nz(t,.07,.22,mus,'highpass',3500);o('triangle',190,t,.07,.25,mus,{to:150})}
+ if(s%2===0)nz(t,s%4===2?.05:.025,s%4===2?.1:.05,mus,'highpass',8000);
+ if(!intro&&s%2===0)o('sawtooth',mf(s%4===2?r+12:r),t,ST*1.5,.16,mus,{a:.003,lp:900,lpTo:260,lpT:ST*1.5});
+}
+function musicFor(){if(!AC)return;const on=!muted&&(slides[cur].dataset.music==='on'||!!timer);mus.gain.setTargetAtTime(on?.38:0,AC.currentTime,.6)}
+/* efeitos */
+const stab=(t,notes,dur,pk)=>notes.forEach((m,i)=>{o('sawtooth',mf(m),t,dur,pk,sfx,{a:.006,det:i%2?12:-12,lp:5200,lpTo:900,lpT:dur,send:revS})});
+const S={
+ start(){const t=AC.currentTime;nz(t,.45,.35,sfx,'bandpass',300,{to:5000,a:.4});o('sine',90,t+.42,.9,.9,sfx,{to:38,drive:1});stab(t+.42,[60,67,70,75],.9,.07)},
+ step(){const t=AC.currentTime;nz(t,.025,.12,sfx,'highpass',4200);o('sine',1600,t,.03,.04,sfx)},
+ xp(){const t=AC.currentTime;nz(t,.24,.3,sfx,'bandpass',500,{to:6000,a:.2});o('sine',70,t+.22,.8,.95,sfx,{to:36,drive:1});stab(t+.22,[63,67,70,74,79],.75,.06);[84,87,91].forEach((m,i)=>o('triangle',mf(m),t+.3+i*.07,.5,.08,sfx,{send:revS}))},
+ level(){const t=AC.currentTime;nz(t,.8,.32,sfx,'bandpass',300,{to:7000,a:.75});o('sine',65,t+.8,1.4,1,sfx,{to:32,drive:1});stab(t+.8,[55,62,67,71,74,79],1.6,.07);[79,83,86,91,95].forEach((m,i)=>o('triangle',mf(m),t+.9+i*.09,.7,.09,sfx,{send:revS}))},
+ hit(){const t=AC.currentTime;o('sine',160,t,.4,1,sfx,{to:40,glide:.12,drive:1});nz(t,.18,.6,sfx,'lowpass',2200,{send:revS});nz(t,.04,.3,sfx,'highpass',3000)},
+ attack(){const t=AC.currentTime;[33,40,45].forEach((m,i)=>o('sawtooth',mf(m),t,.9,.12,sfx,{a:.05,det:i*7,lp:200,lpTo:1400,lpT:.5,send:revS}));o('sine',55,t,.8,.6,sfx,{to:42})},
+ stamp(){const t=AC.currentTime;o('sine',110,t,.25,1,sfx,{to:45,drive:1});nz(t,.06,.45,sfx,'bandpass',1400)},
+ shutter(){const t=AC.currentTime;nz(t,.03,.6,sfx,'highpass',3000);nz(t+.07,.05,.45,sfx,'highpass',2400)},
+ save(){const t=AC.currentTime;[[76,0],[83,.11],[88,.22]].forEach(([m,d])=>o('sine',mf(m),t+d,.7,.18,sfx,{send:revS}))},
+ tick(){const t=AC.currentTime;o('sine',1050,t,.05,.22,sfx);nz(t,.015,.15,sfx,'highpass',6000)},
+ buzz(){const t=AC.currentTime;[40,47,52].forEach(m=>o('sawtooth',mf(m),t,.9,.12,sfx,{lp:1800,lpTo:300,hold:.3,send:revS}));o('sine',82,t,1,.7,sfx,{to:41,drive:1})}
+};
+const play=k=>{if(AC&&S[k])try{S[k]()}catch(e){}};
+
+/* ---------- XP e efeitos ---------- */
+const steps=sl=>[...sl.querySelectorAll('.step')];
+const xpOf=e=>+(e.dataset.xp||0);
+function baseXP(i){let t=0;for(let k=0;k<i;k++)steps(slides[k]).forEach(e=>t+=xpOf(e));return t}
+function curXP(){let t=baseXP(cur);steps(slides[cur]).forEach(e=>{if(e.classList.contains('on'))t+=xpOf(e)});return t}
+function setXP(v,anim){xpf.style.width=Math.min(100,v)+'%';if(!anim){shownXP=v;xpn.textContent=v;return}const from=shownXP,t0=performance.now();shownXP=v;(function tick(now){const p=Math.min(1,(now-t0)/900);xpn.textContent=Math.round(from+(v-from)*p);if(p<1)requestAnimationFrame(tick)})(t0)}
+function el(cls,html,css){const d=document.createElement('div');d.className=cls;if(html)d.innerHTML=html;if(css)Object.assign(d.style,css);fx.appendChild(d);return d}
+function gainXP(st){const n=xpOf(st),total=curXP();play('xp');areaEl.classList.remove('show');
+ if(st.dataset.banner){const b=el('banner','<b></b>');b.firstChild.textContent=st.dataset.banner;b.animate([{transform:'translateX(-120%)'},{transform:'translateX(0)',offset:.2},{transform:'translateX(0)',offset:.8},{transform:'translateX(120%)'}],{duration:2200,easing:'cubic-bezier(.2,.9,.3,1)'}).onfinish=()=>b.remove()}
+ const p=el('xppop','+'+n+' XP');p.animate([{transform:'scale(.2)',opacity:0},{transform:'scale(1.15)',opacity:1,offset:.25},{transform:'scale(1)',opacity:1,offset:.6},{transform:'translateY(-120px) scale(.9)',opacity:0}],{duration:1500,easing:'ease-out'}).onfinish=()=>p.remove();
+ for(let i=0;i<22;i++){const c=el('coin'),a=Math.random()*Math.PI*2,r=80+Math.random()*220,x0=960+Math.cos(a)*r,y0=560+Math.sin(a)*r*.6;c.animate([{transform:`translate(${x0}px,${y0}px) scale(0)`},{transform:`translate(${x0}px,${y0}px) scale(1.2)`,offset:.25},{transform:`translate(1740px,110px) scale(.4)`,opacity:.3}],{duration:1000+i*20,delay:200+i*28,easing:'cubic-bezier(.6,0,.8,.5)',fill:'both'}).onfinish=()=>c.remove()}
+ setTimeout(()=>setXP(total,true),650);
+ if(total>=100&&total-n<100)setTimeout(levelUp,1900)}
+function levelUp(){play('level');const l=el('lvl','<h3>LEVEL UP!</h3><p>FINAL SECRETO DESBLOQUEADO</p>');l.animate([{opacity:0},{opacity:1,offset:.12},{opacity:1,offset:.85},{opacity:0}],{duration:3600}).onfinish=()=>l.remove();
+ const cols=['#FF4D8D','#FFC66D','#2EE6D6','#9B6BF2','#FF8A3D'];for(let i=0;i<70;i++){const c=el('confetti','',{left:Math.random()*1920+'px',background:cols[i%5]});c.animate([{transform:'translateY(0) rotate(0)'},{transform:`translateY(1150px) rotate(${360+Math.random()*720}deg)`}],{duration:2200+Math.random()*1600,delay:Math.random()*600,easing:'cubic-bezier(.3,.1,.7,1)',fill:'both'}).onfinish=()=>c.remove()}}
+function hitFx(st){play('hit');const sl=slides[cur].querySelector('.content');sl.animate([{transform:'translate(0)'},{transform:'translate(-18px,8px)'},{transform:'translate(16px,-10px)'},{transform:'translate(-10px,6px)'},{transform:'translate(0)'}],{duration:380});
+ const r=el('redflash');r.animate([{opacity:1},{opacity:0}],{duration:450}).onfinish=()=>r.remove();
+ const hp=slides[cur].querySelector('.hp').getBoundingClientRect(),sr=stage.getBoundingClientRect(),k=sr.width/1920;
+ const d=el('dmg','−25',{left:((hp.left-sr.left)/k+200)+'px',top:((hp.top-sr.top)/k+40)+'px'});d.animate([{transform:'translateY(0) scale(.6)',opacity:1},{transform:'translateY(-30px) scale(1.2)',offset:.3},{transform:'translateY(-120px) scale(1)',opacity:0}],{duration:1100}).onfinish=()=>d.remove()}
+function shutterFx(){play('shutter');const f=el('flash');f.animate([{opacity:.95},{opacity:0}],{duration:600}).onfinish=()=>f.remove()}
+function refreshHP(){const sl=slides[cur],hits=steps(sl).filter(e=>e.hasAttribute('data-hit')&&e.classList.contains('on')).length;sl.querySelectorAll('.hp i').forEach((h,i)=>h.classList.toggle('gone',i<hits))}
+
+/* ---------- cronômetro ---------- */
+function stopTimer(reset){if(timer){clearInterval(timer);timer=null}if(reset)slides[cur].querySelectorAll('.timer').forEach(t=>{const d=t.querySelector('.tdisp');d.textContent=d.dataset.init;d.classList.remove('end');t.querySelector('.ring').style.strokeDashoffset=0});musicFor()}
+function startTimer(sec){stopTimer(false);const t=slides[cur].querySelector('.timer');if(!t)return;const d=t.querySelector('.tdisp'),ring=t.querySelector('.ring'),end=Date.now()+sec*1000;let last=-1;d.classList.remove('end');
+ const fmt=r=>sec>=100?Math.floor(r/60)+':'+String(r%60).padStart(2,'0'):String(r);
+ timer=setInterval(()=>{const ms=Math.max(0,end-Date.now()),r=Math.ceil(ms/1000);ring.style.strokeDashoffset=1169*(1-ms/(sec*1000));if(r!==last){last=r;d.textContent=fmt(r);if(r<=5&&r>0)play('tick')}
+  if(ms<=0){clearInterval(timer);timer=null;d.textContent='TEMPO!';d.classList.add('end');play('buzz');musicFor()}},100);musicFor()}
+
+/* ---------- navegação ---------- */
+function showArea(sl){const a=sl.dataset.area||'';if(a===lastArea)return;lastArea=a;areaEl.classList.remove('show');if(!a)return;const [k,n]=a.split('|');setTimeout(()=>{areaEl.innerHTML='';const s=document.createElement('small');s.textContent=k;areaEl.append(s,n);areaEl.classList.add('show');setTimeout(()=>areaEl.classList.remove('show'),3200)},400)}
+function go(i,all){stopTimer(true);slides[cur].classList.remove('active');cur=Math.max(0,Math.min(slides.length-1,i));const sl=slides[cur];sl.classList.add('active');
+ steps(sl).forEach(e=>e.classList.toggle('on',!!all));
+ const h=sl.dataset.hud;hud.classList.toggle('off',h==='off');hud.classList.toggle('nr',sl.dataset.radar==='off');hud.style.opacity=h==='dim'?'.55':'';
+ setXP(curXP(),false);refreshHP();showArea(sl);progEl.style.width=((cur+1)/slides.length*100)+'%';pgEl.firstChild.textContent=cur+1;pgEl.lastChild.textContent=' / '+slides.length;
+ const a=cur*0.9;blip.style.transform=`translate(${Math.cos(a)*52}px,${Math.sin(a)*52}px)`;
+ const n=sl.querySelector('aside.notes');notesEl.innerHTML='';const b=document.createElement('b');b.textContent=`Slide ${cur+1}/${slides.length} · `;notesEl.append(b,n?n.textContent:'');
+ try{history.replaceState(null,'','#s'+(cur+1))}catch(e){}
+ musicFor()}
+function reveal(st){st.classList.add('on');
+ if(st.hasAttribute('data-start')){play('start');musicFor();return}
+ if(xpOf(st))return gainXP(st);
+ if(st.hasAttribute('data-hit')){refreshHP();return hitFx(st)}
+ if(st.dataset.timer){play('start');return startTimer(+st.dataset.timer)}
+ const k=st.dataset.sfx;if(k==='shutter')return shutterFx();if(k)return play(k);play('step')}
+function next(){initAudio();if(AC&&AC.state==='suspended')AC.resume();const st=steps(slides[cur]).find(e=>!e.classList.contains('on'));if(st)reveal(st);else if(cur<slides.length-1){go(cur+1,false);play('step')}}
+function prev(){initAudio();const on=steps(slides[cur]).filter(e=>e.classList.contains('on'));if(on.length){const st=on[on.length-1];st.classList.remove('on');if(st.dataset.timer)stopTimer(true);setXP(curXP(),false);refreshHP()}else if(cur>0)go(cur-1,true)}
+addEventListener('keydown',e=>{const k=e.key;
+ if(['ArrowRight','PageDown',' ','Enter','ArrowDown'].includes(k)){e.preventDefault();next()}
+ else if(['ArrowLeft','PageUp','Backspace','ArrowUp'].includes(k)){e.preventDefault();prev()}
+ else if(k==='m'||k==='M'){initAudio();muted=!muted;musicFor()}
+ else if(k==='n'||k==='N')notesEl.classList.toggle('show');
+ else if(k==='f'||k==='F'){try{document.fullscreenElement?document.exitFullscreen():document.documentElement.requestFullscreen().catch(()=>{})}catch(err){}}
+ else if(k==='Home')go(0,false);else if(k==='End')go(slides.length-1,true)});
+stage.addEventListener('click',next);
+document.getElementById('bn').addEventListener('click',e=>{e.stopPropagation();next()});
+document.getElementById('bp').addEventListener('click',e=>{e.stopPropagation();prev()});
+setTimeout(()=>{document.getElementById('hint').style.opacity=0},7000);
+const m=/^#s(\d+)$/.exec(location.hash);slides[0].classList.add('active');go(m?(+m[1]-1):0,!!m);
+}
+</script>
+</body>
+</html>
