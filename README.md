@@ -38,7 +38,7 @@ inteira.
   diária e recarga), a turma destrava o final secreto e sai com três itens no
   inventário pra segunda-feira.
 - **Super bônus:** quem zera ganha o QR do
-  [Tudo que eu queria ter sabido](https://masbahguriatech.github.io/tudo-que-eu-queria-ter-sabido/),
+  [Tudo que eu queria ter sabido quando saí do ensino médio](https://masbahguriatech.github.io/tudo-que-eu-queria-ter-sabido/),
   um fliperama com fases sobre LinkedIn, dinheiro, faculdade e comunidades tech.
 
 A frase que fica: **tu pode mais. E não vai só.**
