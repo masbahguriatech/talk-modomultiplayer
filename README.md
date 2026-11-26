@@ -37,6 +37,9 @@ inteira.
 - **Final:** cada pessoa monta o seu plano (ponto de apoio, comunidade, missão
   diária e recarga), a turma destrava o final secreto e sai com três itens no
   inventário pra segunda-feira.
+- **Super bônus:** quem zera ganha o QR do
+  [Tudo que eu queria ter sabido](https://masbahguriatech.github.io/tudo-que-eu-queria-ter-sabido/),
+  um fliperama com fases sobre LinkedIn, dinheiro, faculdade e comunidades tech.
 
 A frase que fica: **tu pode mais. E não vai só.**
 
@@ -79,6 +82,7 @@ Passador de slide funciona direto (ele manda PageUp/PageDown).
 index.html   o deck inteiro (HTML + CSS + JS)
 npc.webp     a minha personagem
 qr.png       QR code do último slide (meu Linktree)
+qr-bonus.png QR code do super bônus (slide 17)
 ```
 
 ## Quer editar?
